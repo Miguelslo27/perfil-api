@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/Miguelslo27/perfil-api/issues"
   },
-  "homepage": "https://github.com/Miguelslo27/perfil-api#readme"
+  "homepage": "https://github.com/Miguelslo27/perfil-api#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
