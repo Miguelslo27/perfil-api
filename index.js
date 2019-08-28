@@ -23,7 +23,7 @@ async function handleCollectionResponse(collection) {
   };
 }
 
-function handleCollectionUpdateInsert(response) {
+function handleCollectionUpdateInsert(response, req, res) {
   if (response.result.length) {
     response.collection.updateOne({
       _id: new ObjectID(response.result[0]._id)
@@ -39,7 +39,7 @@ function handleCollectionUpdateInsert(response) {
   }
 }
 
-function handleError(error) {
+function handleError(error, res) {
   console.error(error);
   return res.status(500).send(error);
 }
@@ -54,14 +54,14 @@ server.get('/api/data', (req, res) => {
   getCollection('data')
     .then(dataCollection => dataCollection.find({}).toArray())
     .then(data => res.status(200).send(data[0] || {}))
-    .catch(handleError);
+    .catch(error => handleError(error.MongoError, res));
 });
 
 server.post('/api/data', (req, res) => {
   getCollection('data')
     .then(handleCollectionResponse)
-    .then(handleCollectionUpdateInsert)
-    .catch(handleError);
+    .then(response => handleCollectionUpdateInsert(response, req, res))
+    .catch(error => handleError(error.MongoError, res));
 });
 
 server.listen(port, () => {
