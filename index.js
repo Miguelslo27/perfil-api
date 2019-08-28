@@ -12,75 +12,58 @@ var dbname = 'profile';
 function getCollection(collectionName) {
   return mongoClient
     .connect(mongoUrl)
-    .then(function (client) {
-      return client.db(dbname);
-    })
-    .then(function (database) {
-      return database.collection(collectionName);
+    .then(client => client.db(dbname))
+    .then(database => database.collection(collectionName));
+}
+
+async function handleCollectionResponse(collection) {
+  return {
+    collection,
+    result: await collection.find({}).toArray()
+  };
+}
+
+function handleCollectionUpdateInsert(response) {
+  if (response.result.length) {
+    response.collection.updateOne({
+      _id: new ObjectID(response.result[0]._id)
+    }, { $set: req.body }, error => {
+      if (error) return res.status(500).send(error);
+      return res.status(200).send('Se actualizaron los datos');
     });
+  } else {
+    response.collection.insertOne(req.body, error => {
+      if (error) return res.status(500).send(error);
+      return res.status(200).send('Se salvaron los datos');
+    });
+  }
+}
+
+function handleError(error) {
+  console.error(error);
+  return res.status(500).send(error);
 }
 
 server.use(bodyParser.json());
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(cors());
 
-server.get('/', function (req, res) {
-  return res.status(200).send('ok');
-});
+server.get('/', (req, res) => res.status(200).send('ok'));
 
-server.get('/api/data', function (req, res) {
+server.get('/api/data', (req, res) => {
   getCollection('data')
-    .then(function (dataCollection) {
-      return dataCollection.find({}).toArray();
-    })
-    .then(function (data) {
-      return res.status(200).send(data[0] || {});
-    })
-    .catch(function (error) {
-      console.error(error);
-      return res.status(500).send(error);
-    });
+    .then(dataCollection => dataCollection.find({}).toArray())
+    .then(data => res.status(200).send(data[0] || {}))
+    .catch(handleError);
 });
 
-server.post('/api/data', function (req, res) {
-  console.log('BODY', req.body);
-  
+server.post('/api/data', (req, res) => {
   getCollection('data')
-    .then(async function (collection) {
-      return {
-        collection: collection,
-        result: await collection.find({}).toArray()
-      }
-    })
-    .then(function (response) {
-      console.log('In response from result');
-      console.log(response.result.length);
-      
-      if (response.result.length) { // result.length = 0 == false | result.length > 0 == true
-        response.collection.updateOne({
-          _id: new ObjectID(response.result[0]._id)
-        }, { $set: req.body }, function (error, result) {
-          console.log('error', error);
-          console.log('result', result);
-          
-          if (error) return res.status(500).send(error);
-
-          return res.status(200).send('Se actualizaron los datos');
-        });
-      } else {
-        response.collection.insertOne(req.body, function (error, result) {
-          if (error) return res.status(500).send(error);
-
-          return res.status(200).send('Se salvaron los datos');
-        });
-      }
-    })
-    .catch(function (error) {
-      console.error(error);
-      return res.status(500).send(error);
-    });
+    .then(handleCollectionResponse)
+    .then(handleCollectionUpdateInsert)
+    .catch(handleError);
 });
 
-server.listen(port, function () {
+server.listen(port, () => {
   console.log('Mi servidor esta en linea en el puerto ' + port);
 });
