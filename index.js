@@ -1,43 +1,30 @@
 var express = require('express');
-var mongodb = require('mongodb');
-var mongoClient = mongodb.MongoClient;
+var bodyParser = require('body-parser');
 var server = express();
 var port = process.env.PORT || 3000;
 var cors = require('cors');
-var mongoUrl = 'mongodb://localhost:27017/';
-var dbname = 'proyecto-perfil';
+var helper = require('./database/helpers.js');
 
-function getCollection(collectionName) {
-  return mongoClient
-    .connect(mongoUrl)
-    .then(function (client) {
-      return client.db(dbname);
-    })
-    .then(function (database) {
-      return database.collection(collectionName);
-    });
-}
-
+server.use(bodyParser.json());
+server.use(bodyParser.urlencoded({ extended: true }));
 server.use(cors());
 
-server.get('/', function (req, res) {
-  return res.status(200).send('ok');
+server.get('/', (req, res) => res.status(200).send('ok'));
+
+server.get('/api/data', (req, res) => {
+  helper.getCollection('data')
+    .then(dataCollection => dataCollection.find({}).toArray())
+    .then(data => res.status(200).send(data[0] || {}))
+    .catch(error => helper.handleError(error.MongoError, res));
 });
 
-server.get('/api/data', function (req, res) {
-  getCollection('datos')
-    .then(function (dataCollection) {
-      return dataCollection.find({}).toArray();
-    })
-    .then(function (data) {
-      return res.status(200).send(data[0] || {});
-    })
-    .catch(function (error) {
-      console.error(error);
-      return res.status(500).send(error);
-    });
+server.post('/api/data', (req, res) => {
+  helper.getCollection('data')
+    .then(helper.handleCollectionResponse)
+    .then(response => helper.handleCollectionUpdateInsert(response, req, res))
+    .catch(error => helper.handleError(error.MongoError, res));
 });
 
-server.listen(port, function () {
+server.listen(port, () => {
   console.log('Mi servidor esta en linea en el puerto ' + port);
 });
