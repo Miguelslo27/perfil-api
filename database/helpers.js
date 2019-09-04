@@ -1,8 +1,8 @@
-var mongodb = require('mongodb');
-var mongoClient = mongodb.MongoClient;
-var ObjectID = mongodb.ObjectID;
-var mongoUrl = 'mongodb://localhost:27017/';
-var dbname = 'profile';
+const mongodb = require('mongodb');
+const mongoClient = mongodb.MongoClient;
+const ObjectID = mongodb.ObjectID;
+const mongoUrl = 'mongodb://localhost:27017/';
+const dbname = 'profile';
 
 function getCollection(collectionName) {
   return mongoClient
